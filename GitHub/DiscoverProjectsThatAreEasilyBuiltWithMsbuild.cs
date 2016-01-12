@@ -10,7 +10,7 @@ using Octokit;
 
 namespace GitHub
 {
-    internal static class FindProjectsThatAreEasilyBuilt
+    internal static class DiscoverProjectsThatAreEasilyBuiltWithMsbuild
     {
         private static void Main()
         {
@@ -20,7 +20,7 @@ namespace GitHub
             var searchRepositoriesRequest = new SearchRepositoriesRequest
             {
                 Language = Language.CSharp,
-                Forks = Range.GreaterThan(400)
+                Forks = Range.GreaterThan(400) // 15 gets 75 projects for F#
             };
 
             var searchRepositoryResult =
@@ -37,7 +37,10 @@ namespace GitHub
 
         private static void AttemptToBuildProjects(string buildFolder)
         {
-            Console.WriteLine("ProjectName, SolutionCount, EasyToBuildCount");
+            var outCsv = "out.csv";
+            File.AppendAllText(outCsv, "ProjectName, SolutionCount, EasyToBuildCount" + Environment.NewLine);
+
+            Console.WriteLine();
             foreach (var gitHubSourceFolder in Directory.GetDirectories(buildFolder))
             {
                 var solutionFiles = new DirectoryInfo(gitHubSourceFolder).GetFiles("*.sln", SearchOption.AllDirectories);
@@ -50,34 +53,57 @@ namespace GitHub
                         successfullSolutionBuildCount++;
                 }
 
+                File.AppendAllText(outCsv,
+                    $"{gitHubSourceFolder},{solutionFiles.Length},{successfullSolutionBuildCount}" + Environment.NewLine);
+
                 Console.WriteLine($"{gitHubSourceFolder},{solutionFiles.Length},{successfullSolutionBuildCount}");
+                try
+                {
+                    Directory.Delete(gitHubSourceFolder, true);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);g
+                }
             }
         }
 
-        private static void DownloadProjectsFromGitHub(IEnumerable<Repository> searchRepositoryResult, string buildFolder)
+        private static void DownloadProjectsFromGitHub(IEnumerable<Repository> searchRepositoryResult,
+            string buildFolder)
         {
-            var parallelOptions = new ParallelOptions {MaxDegreeOfParallelism = 4};
+            var parallelOptions = new ParallelOptions {MaxDegreeOfParallelism = 1};
             Parallel.ForEach(searchRepositoryResult, parallelOptions, r =>
             {
                 var archivePath = Path.Combine(buildFolder, r.Name + ".zip");
                 var destinationDirectoryName = Path.Combine(buildFolder, r.Name);
-
-                var downloadUrl = r.HtmlUrl + "/archive/master.zip";
-
-                using (var client = new WebClient())
+                if (!File.Exists(archivePath))
                 {
-                    client.DownloadFile(downloadUrl, archivePath);
+                    var downloadUrl = r.HtmlUrl + "/archive/master.zip";
+                    Console.WriteLine("Downloading from: {0}", downloadUrl);
+                    using (var client = new WebClient())
+                    {
+                        client.DownloadFile(downloadUrl, archivePath);
+                    }
                 }
-                ZipFile.ExtractToDirectory(archivePath, destinationDirectoryName);
+
+                try
+                {
+                    Console.WriteLine("Extracting to: {0}", destinationDirectoryName);
+                    ZipFile.ExtractToDirectory(archivePath, destinationDirectoryName);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    Directory.Delete(destinationDirectoryName, true);
+                }
             });
         }
 
         private static string GetBuildFolder()
         {
             const string folder = "c:\\s";
-            if (Directory.Exists(folder))
-                Directory.Delete(folder, true);
-            Directory.CreateDirectory(folder);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
             return folder;
         }
 
@@ -85,7 +111,7 @@ namespace GitHub
         {
             var p = new Process
             {
-                StartInfo = new ProcessStartInfo(@"C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe")
+                StartInfo = new ProcessStartInfo(@"C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe")
                 {
                     Arguments = fullName
                 }
