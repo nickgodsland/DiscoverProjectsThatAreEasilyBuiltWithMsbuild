@@ -1,0 +1,8 @@
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\GitHub.exe.config
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\GitHub.exe
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\GitHub.pdb
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\Octokit.dll
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\Octokit.pdb
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\bin\Debug\Octokit.xml
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\obj\Debug\GitHub.exe
+c:\users\nick\documents\visual studio 2015\Projects\GitHub\GitHub\obj\Debug\GitHub.pdb
